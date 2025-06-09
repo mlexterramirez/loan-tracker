@@ -2,7 +2,7 @@ import { useForm } from 'react-hook-form';
 import { calculateMonthlyPayment } from '../utils/loanCalculations';
 import { formatCurrency } from '../utils/helpers';
 
-export default function LoanForm({ borrower, onSubmit }) {
+const LoanForm = () =>({ borrower, onSubmit }) => {
   const { register, handleSubmit, watch, formState: { errors } } = useForm();
   const terms = watch('terms', 3);
   const interestRate = watch('monthlyInterestPct', 5);
@@ -77,4 +77,5 @@ export default function LoanForm({ borrower, onSubmit }) {
       </button>
     </form>
   );
-}
+};
+export default LoanForm;
