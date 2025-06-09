@@ -18,13 +18,30 @@ function App() {
       <BrowserRouter>
         <div className="min-h-screen bg-gray-50">
           <Navbar />
-          <Toaster position="top-right" />
+          {/* Toast Notification Container */}
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+              success: {
+                duration: 3000,
+                theme: {
+                  primary: 'green',
+                  secondary: 'black',
+                },
+              },
+              error: {
+                duration: 5000,
+              },
+            }}
+          />
           <div className="container mx-auto px-4 py-8">
             <Routes>
-              {/* Public Routes */}
               <Route path="/login" element={<Login />} />
-
-              {/* Protected Routes */}
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/borrowers" element={<Borrowers />} />
