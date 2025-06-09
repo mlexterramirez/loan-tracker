@@ -40,3 +40,14 @@
 .read-the-docs {
   color: #888;
 }
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.container {
+  max-width: 1200px;
+}
+
+/* Add any custom styles here */
