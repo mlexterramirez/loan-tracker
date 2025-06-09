@@ -5,7 +5,7 @@ import { formatCurrency } from '../utils/helpers';
 import BorrowerForm from '../components/BorrowerForm';
 import { PlusIcon } from '@heroicons/react/outline';
 
-export default function Borrowers() {
+const Borrowers = () => {
   const { borrowers, loading, addBorrower } = useBorrowers();
   const [showForm, setShowForm] = useState(false);
 
@@ -81,4 +81,5 @@ export default function Borrowers() {
       </div>
     </div>
   );
-}
+};
+export default Borrowers;  // Make sure this is at the bottom

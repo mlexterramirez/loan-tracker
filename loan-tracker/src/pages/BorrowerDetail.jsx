@@ -7,7 +7,7 @@ import LoanForm from '../components/LoanForm';
 import { formatCurrency } from '../utils/helpers';
 import { PlusIcon } from '@heroicons/react/outline';
 
-export default function BorrowerDetail() {
+const BorrowerDetail = () => {
   const { id } = useParams();
   const [borrower, setBorrower] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -129,4 +129,6 @@ export default function BorrowerDetail() {
       </div>
     </div>
   );
-}
+};
+
+export default BorrowerDetail; 
