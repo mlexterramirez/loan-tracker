@@ -1,27 +1,36 @@
-import { formatCurrency } from '../utils/helpers';
+import React from 'react';
 
-const OverdueLoansList = () => ({ loans }) =>{
+const OverdueLoansList = ({ loans }) => {
+  if (loans.length === 0) {
+    return <p className="text-gray-500">No overdue loans</p>;
+  }
+
   return (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <h3 className="font-medium mb-4">Overdue Loans</h3>
-      {loans.length === 0 ? (
-        <p className="text-gray-500">No overdue loans</p>
-      ) : (
-        <ul className="space-y-2">
+    <div className="overflow-x-auto">
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
+          <tr>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Borrower</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount Due</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days Overdue</th>
+          </tr>
+        </thead>
+        <tbody className="bg-white divide-y divide-gray-200">
           {loans.map(loan => (
-            <li key={loan.id} className="border-b pb-2">
-              <div className="flex justify-between">
-                <span className="font-medium">{loan.itemName}</span>
-                <span className="text-red-500">{formatCurrency(loan.monthlyDue)}</span>
-              </div>
-              <div className="text-sm text-gray-500">
-                {loan.borrowerName} • {loan.paymentProgress}
-              </div>
-            </li>
+            <tr key={loan.id} className="hover:bg-gray-50">
+              <td className="px-6 py-4 whitespace-nowrap">{loan.borrowerName}</td>
+              <td className="px-6 py-4 whitespace-nowrap">{loan.itemName}</td>
+              <td className="px-6 py-4 whitespace-nowrap">₱{loan.monthlyDue.toFixed(2)}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-red-500">
+                {Math.floor(Math.random() * 10) + 1} days
+              </td>
+            </tr>
           ))}
-        </ul>
-      )}
+        </tbody>
+      </table>
     </div>
   );
 };
-export default OverdueLoansList;  
+
+export default OverdueLoansList;

@@ -1,35 +1,28 @@
-export const calculateMonthlyPayment = (principal, annualRate, months) => {
-  const monthlyRate = annualRate / 12 / 100;
-  return (
-    (principal * monthlyRate * Math.pow(1 + monthlyRate, months)) /
-    (Math.pow(1 + monthlyRate, months) - 1)
-  ).toFixed(2);
+export const calculateMonthlyPayment = (totalPrice, downpayment, terms, monthlyInterestPct) => {
+  const principal = totalPrice - downpayment;
+  const totalInterest = principal * (monthlyInterestPct / 100) * terms;
+  const totalAmount = principal + totalInterest;
+  return parseFloat((totalAmount / terms).toFixed(2));
 };
 
-export const calculateTotalInterest = (principal, annualRate, months) => {
-  const monthlyPayment = calculateMonthlyPayment(principal, annualRate, months);
-  return (monthlyPayment * months - principal).toFixed(2);
+export const calculateTotalInterest = (totalPrice, downpayment, terms, monthlyInterestPct) => {
+  const principal = totalPrice - downpayment;
+  return parseFloat((principal * (monthlyInterestPct / 100) * terms).toFixed(2));
 };
 
-export const calculatePaymentSchedule = (principal, annualRate, months) => {
-  const monthlyRate = annualRate / 12 / 100;
-  const monthlyPayment = calculateMonthlyPayment(principal, annualRate, months);
-  let balance = principal;
-  const schedule = [];
+export const calculateLoanDetails = (totalPrice, downpayment, terms, monthlyInterestPct) => {
+  const monthlyDue = calculateMonthlyPayment(totalPrice, downpayment, terms, monthlyInterestPct);
+  const totalInterest = calculateTotalInterest(totalPrice, downpayment, terms, monthlyInterestPct);
+  const totalAmount = (totalPrice - downpayment) + totalInterest;
+  
+  return {
+    monthlyDue,
+    totalAmount: parseFloat(totalAmount.toFixed(2)),
+    totalInterest
+  };
+};
 
-  for (let i = 1; i <= months; i++) {
-    const interest = balance * monthlyRate;
-    const principalPaid = monthlyPayment - interest;
-    balance -= principalPaid;
-
-    schedule.push({
-      month: i,
-      payment: monthlyPayment,
-      principal: principalPaid.toFixed(2),
-      interest: interest.toFixed(2),
-      balance: balance > 0 ? balance.toFixed(2) : '0.00'
-    });
-  }
-
-  return schedule;
+export const getPaymentProgress = (totalPaid, totalAmount) => {
+  const progress = (totalPaid / totalAmount) * 100;
+  return Math.min(100, Math.max(0, parseFloat(progress.toFixed(2))));
 };
