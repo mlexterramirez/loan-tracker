@@ -1,21 +1,14 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { calculateMonthlyPayment } from '../utils/loanCalculations';
-import { generateUUID } from '../utils/helpers';
 
-export const useLoans = (borrowerId = null) => {
+export const useLoans = () => {
   const [loans, setLoans] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let q;
-    if (borrowerId) {
-      q = query(collection(db, 'loans'), where('borrowerId', '==', borrowerId));
-    } else {
-      q = query(collection(db, 'loans'));
-    }
-
+    const q = collection(db, 'loans');
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const loansData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -26,61 +19,30 @@ export const useLoans = (borrowerId = null) => {
     });
 
     return () => unsubscribe();
-  }, [borrowerId]);
+  }, []);
 
   const addLoan = async (loanData) => {
-    const loanId = generateUUID();
     const monthlyDue = calculateMonthlyPayment(
-      loanData.totalPrice - loanData.downpayment,
+      loanData.totalPrice - (loanData.downpayment || 0),
       loanData.terms,
       loanData.monthlyInterestPct
     );
-    
-    await setDoc(doc(db, 'loans', loanId), {
+
+    const loanRef = await addDoc(collection(db, 'loans'), {
       ...loanData,
-      loanId,
       monthlyDue,
+      totalPaid: loanData.downpayment || 0,
+      paymentProgress: `0 of ${loanData.terms} payments made`,
       status: 'active',
-      totalPaid: loanData.downpayment,
-      paymentProgress: `0 of ${loanData.terms} payments made`
+      createdAt: new Date().toISOString()
     });
+    
+    return { id: loanRef.id, ...loanData };
   };
 
-  return { loans, loading, addLoan };
-};
-
-export const usePayments = (loanId = null) => {
-  const [payments, setPayments] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let q;
-    if (loanId) {
-      q = query(collection(db, 'payments'), where('loanId', '==', loanId));
-    } else {
-      q = query(collection(db, 'payments'));
-    }
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const paymentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setPayments(paymentsData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [loanId]);
-
-  const addPayment = async (paymentData) => {
-    const paymentId = generateUUID();
-    await setDoc(doc(db, 'payments', paymentId), {
-      ...paymentData,
-      paymentId,
-      paymentDate: new Date().toISOString()
-    });
+  const updateLoanStatus = async (loanId, status) => {
+    await updateDoc(doc(db, 'loans', loanId), { status });
   };
 
-  return { payments, loading, addPayment };
+  return { loans, loading, addLoan, updateLoanStatus };
 };

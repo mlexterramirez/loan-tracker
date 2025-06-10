@@ -1,16 +1,16 @@
-import { usePayments } from '../hooks/useLoans'; 
+import { usePayments } from '../hooks/usePayments';
 import { formatCurrency } from '../utils/helpers';
 
-const Payments = () =>{
+export default function Payments() {
   const { payments, loading } = usePayments();
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Loading payments...</div>;
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Payments</h1>
+      <h1 className="text-2xl font-bold text-gray-800">Payments</h1>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-xl shadow overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -44,6 +44,4 @@ const Payments = () =>{
       </div>
     </div>
   );
-};
-
-export default Payments; 
+}

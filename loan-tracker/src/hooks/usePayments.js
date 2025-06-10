@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
 export const usePayments = (loanId = null) => {
@@ -27,12 +27,11 @@ export const usePayments = (loanId = null) => {
   }, [loanId]);
 
   const addPayment = async (paymentData) => {
-    const paymentId = generateUUID();
-    await setDoc(doc(db, 'payments', paymentId), {
+    const paymentRef = await addDoc(collection(db, 'payments'), {
       ...paymentData,
-      paymentId,
       paymentDate: new Date().toISOString()
     });
+    return { id: paymentRef.id, ...paymentData };
   };
 
   return { payments, loading, addPayment };
