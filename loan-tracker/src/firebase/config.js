@@ -1,4 +1,12 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp } from 'firebase/app';
+import { 
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
@@ -11,12 +19,14 @@ const firebaseConfig = {
   appId: "1:707075278222:web:e453bd5302ef0ca18110df"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
-// Initialize services
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Explicit exports
-export { db, auth };
+// Export auth methods
+export {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+};

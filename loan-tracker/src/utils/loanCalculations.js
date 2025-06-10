@@ -1,14 +1,35 @@
-export const calculateMonthlyPayment = (principal, terms, interestRate) => {
-  const monthlyRate = interestRate / 100 / 12;
-  return principal * monthlyRate * Math.pow(1 + monthlyRate, terms) / 
-         (Math.pow(1 + monthlyRate, terms) - 1);
+export const calculateMonthlyPayment = (principal, annualRate, months) => {
+  const monthlyRate = annualRate / 12 / 100;
+  return (
+    (principal * monthlyRate * Math.pow(1 + monthlyRate, months)) /
+    (Math.pow(1 + monthlyRate, months) - 1)
+  ).toFixed(2);
 };
 
-export const calculateLoanStats = (loans) => {
-  return loans.reduce((stats, loan) => {
-    stats.totalLoans += 1;
-    if (loan.status === 'late') stats.latePayments += 1;
-    stats.totalPaid += loan.totalPaid;
-    return stats;
-  }, { totalLoans: 0, latePayments: 0, totalPaid: 0 });
+export const calculateTotalInterest = (principal, annualRate, months) => {
+  const monthlyPayment = calculateMonthlyPayment(principal, annualRate, months);
+  return (monthlyPayment * months - principal).toFixed(2);
+};
+
+export const calculatePaymentSchedule = (principal, annualRate, months) => {
+  const monthlyRate = annualRate / 12 / 100;
+  const monthlyPayment = calculateMonthlyPayment(principal, annualRate, months);
+  let balance = principal;
+  const schedule = [];
+
+  for (let i = 1; i <= months; i++) {
+    const interest = balance * monthlyRate;
+    const principalPaid = monthlyPayment - interest;
+    balance -= principalPaid;
+
+    schedule.push({
+      month: i,
+      payment: monthlyPayment,
+      principal: principalPaid.toFixed(2),
+      interest: interest.toFixed(2),
+      balance: balance > 0 ? balance.toFixed(2) : '0.00'
+    });
+  }
+
+  return schedule;
 };
