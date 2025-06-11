@@ -6,6 +6,7 @@ import DashboardSummary from '../components/DashboardSummary';
 import OverdueLoansList from '../components/OverdueLoansList';
 import RecentPayments from '../components/RecentPayments';
 import { useAuth } from '../hooks/useAuth';
+import { getCurrentOverdueLoans } from '../utils/loanCalculations';
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
@@ -41,9 +42,10 @@ export default function Dashboard() {
     const paymentsUnsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
       const paymentsData = snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        paymentDate: doc.data().paymentDate?.toDate?.() || new Date(doc.data().paymentDate)
       }));
-      setPayments(paymentsData);
+      setPayments(paymentsData || []);
       setLoading(false);
     });
 
@@ -55,20 +57,39 @@ export default function Dashboard() {
 
   if (loading) return <div>Loading dashboard...</div>;
 
-  const overdueLoans = loans.filter(loan => 
-    loan.status.includes('delayed') || loan.status === 'late'
-  );
+  const overdueLoans = getCurrentOverdueLoans(loans).map(loan => {
+    const overdueMonths = loan.overdueSince 
+      ? Math.ceil((new Date() - new Date(loan.overdueSince)) / (1000 * 60 * 60 * 24 * 30))
+      : 1;
+    
+    return {
+      ...loan,
+      overdueMonths,
+      monthlyBreakdown: Array(overdueMonths).fill(0).map((_, i) => ({
+        month: i + 1,
+        due: loan.monthlyDue,
+        penalty: loan.monthlyDue * 0.03,
+        total: loan.monthlyDue * 1.03
+      }))
+    };
+  });
+
+  const recentPayments = payments.slice ? payments.slice(0, 5) : [];
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
       
-      <DashboardSummary loans={loans} payments={payments} />
+      <DashboardSummary 
+        loans={loans} 
+        payments={payments} 
+        overdueLoans={overdueLoans} 
+      />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <div className="bg-white p-6 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-4">Recent Payments</h2>
-          <RecentPayments payments={payments.slice(0, 5)} />
+          <RecentPayments payments={recentPayments} />
         </div>
         
         <div className="bg-white p-6 rounded-lg shadow">

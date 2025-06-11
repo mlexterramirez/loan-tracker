@@ -8,7 +8,9 @@ import { db } from '../firebase/config';
 import { 
   calculateLoanDetails, 
   checkOverdueStatus,
-  calculateNextDueDate
+  calculateNextDueDate,
+  getCurrentOverdueLoans,
+  processPayment
 } from '../utils/loanCalculations';
 
 export const useLoans = (userId) => {
@@ -24,14 +26,10 @@ export const useLoans = (userId) => {
     
     const unsubscribe = onSnapshot(q, 
       (snapshot) => {
-        const loansData = snapshot.docs.map(doc => {
-          const loan = doc.data();
-          return {
-            id: doc.id,
-            ...loan,
-            ...checkOverdueStatus(loan)
-          };
-        });
+        const loansData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
         setLoans(loansData);
         setLoading(false);
       },
@@ -78,44 +76,62 @@ export const useLoans = (userId) => {
     }
   }, [userId]);
 
-  const recordPayment = useCallback(async (loanId, paymentData) => {
-    const loanRef = doc(db, 'loans', loanId);
-    const paymentRef = collection(db, 'payments');
-    
+  const updateLoan = useCallback(async (loanId, updateData) => {
     try {
-      const loan = loans.find(l => l.id === loanId);
-      const newTotalPaid = loan.totalPaid + paymentData.amount;
-      const isFullyPaid = newTotalPaid >= loan.totalAmount;
-
-      // Add payment record
-      await addDoc(paymentRef, {
-        ...paymentData,
-        loanId,
-        userId,
-        recordedAt: serverTimestamp()
-      });
-
-      // Update loan status
-      const updates = {
-        totalPaid: newTotalPaid,
-        status: isFullyPaid ? 'completed' : loan.status,
-        lastPaymentDate: serverTimestamp()
-      };
-
-      if (!isFullyPaid) {
-        updates.nextDueDate = calculateNextDueDate(loan);
-      }
-
-      await updateDoc(loanRef, updates);
-
+      const loanRef = doc(db, 'loans', loanId);
+      await updateDoc(loanRef, updateData);
       return true;
     } catch (err) {
       setError(err);
       throw err;
     }
-  }, [loans, userId]);
+  }, []);
 
-  // ... keep existing updateLoan and deleteLoan functions ...
+  const deleteLoan = useCallback(async (loanId) => {
+    try {
+      await deleteDoc(doc(db, 'loans', loanId));
+      return true;
+    } catch (err) {
+      setError(err);
+      throw err;
+    }
+  }, []);
+
+  const recordPayment = useCallback(async (loanId, paymentData) => {
+    const loanRef = doc(db, 'loans', loanId);
+    
+    try {
+      const loan = loans.find(l => l.id === loanId);
+      if (!loan) throw new Error('Loan not found');
+
+      const paymentResult = processPayment(loan, paymentData.amount);
+      const updates = {
+        totalPaid: (loan.totalPaid || 0) + paymentResult.amountCleared,
+        lastPaymentDate: serverTimestamp(),
+      };
+
+      if (paymentResult.isFullPayment) {
+        updates.status = 'active';
+        updates.nextDueDate = calculateNextDueDate(loan);
+        updates.penalty = 0;
+        updates.cumulativeAmount = 0;
+        updates.totalDue = null;
+        updates.isOverdue = false;
+        updates.overdueSince = null;
+        
+        // Handle any remaining amount if payment was more than due
+        if (paymentResult.remainingAmount > 0) {
+          updates.totalPaid += paymentResult.remainingAmount;
+        }
+      }
+
+      await updateDoc(loanRef, updates);
+      return true;
+    } catch (err) {
+      setError(err);
+      throw err;
+    }
+  }, [loans]);
 
   return { 
     loans, 
@@ -124,6 +140,7 @@ export const useLoans = (userId) => {
     addLoan, 
     updateLoan, 
     deleteLoan, 
-    recordPayment 
+    recordPayment,
+    overdueLoans: getCurrentOverdueLoans(loans)
   };
 };
