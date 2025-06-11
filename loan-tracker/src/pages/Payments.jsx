@@ -1,4 +1,5 @@
 // src/pages/Payments.jsx
+import { useState } from 'react'; // Add this import
 import { usePayments, useLoans } from '../hooks';
 import PaymentList from '../components/PaymentList';
 import PaymentForm from '../components/PaymentForm';
