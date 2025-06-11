@@ -1,5 +1,5 @@
 // src/pages/Payments.jsx
-import { useState } from 'react'; // Add this import
+import { useState } from 'react';
 import { usePayments, useLoans } from '../hooks';
 import PaymentList from '../components/PaymentList';
 import PaymentForm from '../components/PaymentForm';
@@ -9,8 +9,29 @@ import { useAuth } from '../hooks/useAuth';
 export default function Payments() {
   const { currentUser } = useAuth();
   const { payments, loading, error, addPayment } = usePayments(currentUser?.uid);
-  const { loans } = useLoans(currentUser?.uid);
+  const { loans, recordPayment } = useLoans(currentUser?.uid);
   const [showForm, setShowForm] = useState(false);
+
+  const handleAddPayment = async (paymentData) => {
+    try {
+      await addPayment({
+        ...paymentData,
+        penaltyAmount: paymentData.penalty || 0,
+        principalAmount: paymentData.amount - (paymentData.penalty || 0),
+        userId: currentUser.uid
+      });
+
+      await recordPayment(paymentData.loanId, {
+        amount: paymentData.amount,
+        penalty: paymentData.penalty || 0,
+        paymentDate: paymentData.paymentDate
+      });
+
+      setShowForm(false);
+    } catch (err) {
+      console.error('Error processing payment:', err);
+    }
+  };
 
   if (loading) return <div>Loading payments...</div>;
   if (error) return <div>Error: {error.message}</div>;
@@ -31,15 +52,8 @@ export default function Payments() {
       {showForm && (
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <PaymentForm
-            loans={loans}
-            onSubmit={async (paymentData) => {
-              try {
-                await addPayment(paymentData);
-                setShowForm(false);
-              } catch (err) {
-                console.error('Error adding payment:', err);
-              }
-            }}
+            loans={loans.filter(loan => loan.status !== 'completed')}
+            onSubmit={handleAddPayment}
             onCancel={() => setShowForm(false)}
           />
         </div>

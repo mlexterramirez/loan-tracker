@@ -7,12 +7,12 @@ import {
 } from '@heroicons/react/outline';
 import { formatCurrency } from '../utils/helpers';
 
-export default function DashboardSummary({ loans, payments }) {
+export default function DashboardSummary({ loans, payments, overdueLoans }) {
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
 
-  // Calculate monthly receivables (all active loans' monthly dues)
+  // Calculate monthly receivables
   const monthlyReceivables = loans
     .filter(loan => loan.status === 'active')
     .reduce((sum, loan) => sum + loan.monthlyDue, 0);
@@ -27,11 +27,6 @@ export default function DashboardSummary({ loans, payments }) {
              paymentDate.getFullYear() === currentYear;
     })
     .reduce((sum, payment) => sum + payment.amount, 0);
-
-  // Count overdue loans
-  const overdueLoans = loans.filter(loan => 
-    loan.status.includes('delayed') || loan.status === 'late'
-  ).length;
 
   // Count active loans
   const activeLoans = loans.filter(loan => 
@@ -61,7 +56,7 @@ export default function DashboardSummary({ loans, payments }) {
           <ExclamationCircleIcon className="h-5 w-5 mr-2 text-orange-500" />
           <span>Overdue Loans</span>
         </div>
-        <p className="text-2xl font-bold">{overdueLoans}</p>
+        <p className="text-2xl font-bold">{overdueLoans.length}</p>
       </div>
       
       <div className="bg-white p-4 rounded-lg shadow">

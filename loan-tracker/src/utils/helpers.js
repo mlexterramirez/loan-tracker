@@ -33,3 +33,13 @@ export const formatPhoneNumber = (phone) => {
   }
   return phone;
 };
+
+export const calculatePenalty = (loan) => {
+  if (!loan.status.includes('delayed')) return 0;
+  
+  const today = new Date();
+  const dueDate = new Date(loan.nextDueDate);
+  const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
+  
+  return daysOverdue > 5 ? loan.monthlyDue * 0.03 * daysOverdue : 0;
+};

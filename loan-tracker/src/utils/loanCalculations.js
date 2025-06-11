@@ -1,10 +1,5 @@
 // src/utils/loanCalculations.js
-export const calculateLoanDetails = (
-  totalPrice,
-  downpayment,
-  terms,
-  monthlyInterestRate
-) => {
+export const calculateLoanDetails = (totalPrice, downpayment, terms, monthlyInterestRate) => {
   const principal = totalPrice - downpayment;
   const totalInterest = principal * (monthlyInterestRate / 100) * terms;
   const totalAmount = principal + totalInterest;
@@ -18,26 +13,45 @@ export const calculateLoanDetails = (
   };
 };
 
-export const calculateRemainingBalance = (totalAmount, totalPaid) => {
-  return parseFloat((totalAmount - totalPaid).toFixed(2));
-};
-
 export const checkOverdueStatus = (loan) => {
-  if (loan.status === 'completed') return {};
+  if (loan.status === 'completed') return loan;
 
   const today = new Date();
   const dueDate = new Date(loan.nextDueDate);
   const daysOverdue = Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
   
   if (daysOverdue > 5) {
-    const penalty = loan.monthlyDue * 0.03 * daysOverdue;
+    // Check if this is a new overdue period (new month)
+    const lastDueDate = loan.lastDueDate ? new Date(loan.lastDueDate) : dueDate;
+    const isNewOverduePeriod = dueDate.getMonth() !== lastDueDate.getMonth() || 
+                              dueDate.getFullYear() !== lastDueDate.getFullYear();
+    
+    let penalty = 0;
+    let cumulativeAmount = loan.cumulativeAmount || 0;
+    
+    if (isNewOverduePeriod) {
+      penalty = loan.monthlyDue * 0.03; // 3% one-time penalty
+      cumulativeAmount += loan.monthlyDue + penalty;
+    }
+
     return {
+      ...loan,
       status: `delayed (${daysOverdue} days)`,
-      penalty: parseFloat(penalty.toFixed(2)),
-      amountDue: loan.monthlyDue + penalty
+      penalty,
+      cumulativeAmount,
+      totalDue: cumulativeAmount,
+      lastDueDate: loan.nextDueDate,
+      isOverdue: true,
+      overdueSince: loan.overdueSince || loan.nextDueDate
     };
   }
-  return {};
+  return loan;
+};
+
+export const getCurrentOverdueLoans = (loans) => {
+  return loans
+    .map(loan => checkOverdueStatus(loan))
+    .filter(loan => loan.isOverdue);
 };
 
 export const calculateNextDueDate = (loan) => {
@@ -49,7 +63,14 @@ export const calculateNextDueDate = (loan) => {
   return nextDate.toISOString();
 };
 
-export const getPaymentStatus = (dueDate, paymentDate) => {
-  if (!paymentDate) return 'pending';
-  return new Date(paymentDate) <= new Date(dueDate) ? 'on-time' : 'late';
+export const processPayment = (loan, paymentAmount) => {
+  const amountDue = loan.totalDue || loan.monthlyDue;
+  const isFullPayment = paymentAmount >= amountDue;
+  
+  return {
+    isFullPayment,
+    remainingAmount: isFullPayment ? paymentAmount - amountDue : 0,
+    amountCleared: Math.min(paymentAmount, amountDue),
+    amountDue
+  };
 };

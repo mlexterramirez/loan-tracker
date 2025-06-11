@@ -1,6 +1,7 @@
 // src/components/PaymentForm.jsx
-import { useState } from 'react';
-import { CurrencyDollarIcon, CalendarIcon } from '@heroicons/react/outline';
+import { useState, useEffect } from 'react';
+import { CurrencyDollarIcon, CalendarIcon, ExclamationCircleIcon } from '@heroicons/react/outline';
+import { formatCurrency } from '../utils/helpers';
 
 export default function PaymentForm({ loans, onSubmit, onCancel }) {
   const [formData, setFormData] = useState({
@@ -10,6 +11,24 @@ export default function PaymentForm({ loans, onSubmit, onCancel }) {
     paymentMethod: 'cash',
     notes: ''
   });
+
+  const [selectedLoan, setSelectedLoan] = useState(null);
+
+  useEffect(() => {
+    if (formData.loanId) {
+      const loan = loans.find(l => l.id === formData.loanId);
+      setSelectedLoan(loan);
+      
+      if (loan) {
+        setFormData(prev => ({
+          ...prev,
+          amount: (loan.totalDue || loan.monthlyDue).toFixed(2),
+          borrowerName: loan.borrowerName,
+          loanName: loan.itemName
+        }));
+      }
+    }
+  }, [formData.loanId, loans]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -21,7 +40,9 @@ export default function PaymentForm({ loans, onSubmit, onCancel }) {
     onSubmit({
       ...formData,
       amount: parseFloat(formData.amount),
-      isLate: false // You can add logic to determine if payment is late
+      isLate: selectedLoan?.status?.includes('delayed'),
+      borrowerName: selectedLoan?.borrowerName,
+      loanName: selectedLoan?.itemName
     });
   };
 
@@ -40,11 +61,31 @@ export default function PaymentForm({ loans, onSubmit, onCancel }) {
             <option value="">Select Loan</option>
             {loans.map(loan => (
               <option key={loan.id} value={loan.id}>
-                {loan.borrowerName} - {loan.itemName} (₱{loan.monthlyDue})
+                {loan.borrowerName} - {loan.itemName} 
+                {loan.status?.includes('delayed') ? ` (Overdue: ${formatCurrency(loan.totalDue)})` : ` (${formatCurrency(loan.monthlyDue)})`}
               </option>
             ))}
           </select>
         </div>
+
+        {selectedLoan?.status?.includes('delayed') && (
+          <div className="bg-red-50 p-3 rounded-lg border border-red-200 col-span-2">
+            <div className="font-bold text-red-800">Overdue Payment</div>
+            <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+              <div>Monthly Due: {formatCurrency(selectedLoan.monthlyDue)}</div>
+              <div>Accumulated: {formatCurrency((selectedLoan.totalDue || 0) - (selectedLoan.monthlyDue || 0))}</div>
+              <div className="font-bold">Total Due: {formatCurrency(selectedLoan.totalDue)}</div>
+            </div>
+            {selectedLoan.overdueSince && (
+              <div className="mt-2 text-xs">
+                Overdue since: {formatDate(selectedLoan.overdueSince)} ({Math.ceil(
+                  (new Date() - new Date(selectedLoan.overdueSince)) / 
+                  (1000 * 60 * 60 * 24 * 30)
+                )} months)
+              </div>
+            )}
+          </div>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Amount*</label>
@@ -58,7 +99,7 @@ export default function PaymentForm({ loans, onSubmit, onCancel }) {
               value={formData.amount}
               onChange={handleChange}
               className="pl-10 w-full px-4 py-2 border border-gray-300 rounded-lg"
-              min="0"
+              min={selectedLoan?.totalDue || selectedLoan?.monthlyDue || 0}
               step="0.01"
               required
             />

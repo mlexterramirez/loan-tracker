@@ -4,8 +4,9 @@ import {
   collection, 
   query, 
   where, 
-  onSnapshot,
-  addDoc
+  onSnapshot, 
+  addDoc,
+  serverTimestamp  // Add this import
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
@@ -40,12 +41,13 @@ export const usePayments = (userId) => {
 
   const addPayment = useCallback(async (paymentData) => {
     try {
-      const paymentRef = await addDoc(collection(db, 'payments'), {
+      const paymentRef = collection(db, 'payments');
+      await addDoc(paymentRef, {
         ...paymentData,
-        paymentDate: new Date().toISOString(),
-        userId
+        userId,
+        recordedAt: serverTimestamp()  // Now properly imported
       });
-      return { id: paymentRef.id, ...paymentData };
+      return true;
     } catch (err) {
       setError(err);
       throw err;
