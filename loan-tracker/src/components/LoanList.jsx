@@ -1,18 +1,25 @@
 // src/components/LoanList.jsx
-import { CurrencyDollarIcon, ClockIcon, CheckCircleIcon, ExclamationCircleIcon } from '@heroicons/react/outline';
+import { 
+  CurrencyDollarIcon, 
+  ClockIcon, 
+  CheckCircleIcon, 
+  ExclamationCircleIcon 
+} from '@heroicons/react/outline';
 import { formatCurrency, formatDate } from '../utils/helpers';
 
 const statusIcons = {
   active: <ClockIcon className="h-5 w-5 text-blue-500" />,
   late: <ExclamationCircleIcon className="h-5 w-5 text-yellow-500" />,
-  paid: <CheckCircleIcon className="h-5 w-5 text-green-500" />,
+  delayed: <ExclamationCircleIcon className="h-5 w-5 text-orange-500" />,
+  completed: <CheckCircleIcon className="h-5 w-5 text-green-500" />,
   defaulted: <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
 };
 
 const statusColors = {
   active: 'bg-blue-100 text-blue-800',
   late: 'bg-yellow-100 text-yellow-800',
-  paid: 'bg-green-100 text-green-800',
+  delayed: 'bg-orange-100 text-orange-800',
+  completed: 'bg-green-100 text-green-800',
   defaulted: 'bg-red-100 text-red-800'
 };
 
@@ -27,6 +34,7 @@ export default function LoanList({ loans, onEdit, onDelete }) {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Penalty</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -47,14 +55,21 @@ export default function LoanList({ loans, onEdit, onDelete }) {
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center">
-                  {statusIcons[loan.status]}
-                  <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusColors[loan.status]}`}>
+                  {statusIcons[loan.status.split(' ')[0]] || statusIcons.active}
+                  <span className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                    statusColors[loan.status.split(' ')[0]] || statusColors.active
+                  }`}>
                     {loan.status}
                   </span>
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-gray-500">{formatDate(loan.startDate)}</div>
+                <div className="text-gray-500">{formatDate(loan.nextDueDate)}</div>
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <div className="text-gray-500">
+                  {loan.penalty ? formatCurrency(loan.penalty) : '-'}
+                </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button

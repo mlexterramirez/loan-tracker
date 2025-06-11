@@ -1,70 +1,83 @@
+// src/pages/Dashboard.jsx
 import { useEffect, useState } from 'react';
-import { collection, query, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import LoanSummaryCard from '../components/LoanSummaryCard';
+import DashboardSummary from '../components/DashboardSummary';
 import OverdueLoansList from '../components/OverdueLoansList';
+import RecentPayments from '../components/RecentPayments';
+import { useAuth } from '../hooks/useAuth';
 
-const Dashboard = () => {
-  const [stats, setStats] = useState({
-    totalLoans: 0,
-    activeLoans: 0,
-    overdueLoans: 0,
-    totalAmount: 0
-  });
-  const [overdueLoans, setOverdueLoans] = useState([]);
+export default function Dashboard() {
+  const { currentUser } = useAuth();
+  const [loans, setLoans] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loansQuery = query(collection(db, 'loans'));
+    if (!currentUser) return;
+
+    setLoading(true);
     
-    const unsubscribe = onSnapshot(loansQuery, (snapshot) => {
-      let totalAmount = 0;
-      let activeCount = 0;
-      let overdueCount = 0;
-      const overdue = [];
-      
-      snapshot.forEach(doc => {
-        const loan = doc.data();
-        totalAmount += loan.totalPrice;
-        
-        if (loan.status === 'active') activeCount++;
-        if (loan.status === 'late' || loan.status === 'defaulted') {
-          overdueCount++;
-          overdue.push({ id: doc.id, ...loan });
-        }
-      });
-      
-      setStats({
-        totalLoans: snapshot.size,
-        activeLoans: activeCount,
-        overdueLoans: overdueCount,
-        totalAmount
-      });
-      setOverdueLoans(overdue);
+    // Fetch loans
+    const loansQuery = query(
+      collection(db, 'loans'), 
+      where('userId', '==', currentUser.uid)
+    );
+    
+    const loansUnsubscribe = onSnapshot(loansQuery, (snapshot) => {
+      const loansData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setLoans(loansData);
     });
 
-    return () => unsubscribe();
-  }, []);
+    // Fetch payments
+    const paymentsQuery = query(
+      collection(db, 'payments'),
+      where('userId', '==', currentUser.uid)
+    );
+
+    const paymentsUnsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
+      const paymentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setPayments(paymentsData);
+      setLoading(false);
+    });
+
+    return () => {
+      loansUnsubscribe();
+      paymentsUnsubscribe();
+    };
+  }, [currentUser]);
+
+  if (loading) return <div>Loading dashboard...</div>;
+
+  const overdueLoans = loans.filter(loan => 
+    loan.status.includes('delayed') || loan.status === 'late'
+  );
 
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-6">Loan Dashboard</h1>
+      <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <LoanSummaryCard title="Total Loans" value={stats.totalLoans} />
-        <LoanSummaryCard title="Active Loans" value={stats.activeLoans} />
-        <LoanSummaryCard title="Overdue Loans" value={stats.overdueLoans} />
-        <LoanSummaryCard 
-          title="Total Amount" 
-          value={`₱${stats.totalAmount.toLocaleString()}`} 
-        />
-      </div>
+      <DashboardSummary loans={loans} payments={payments} />
       
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h2 className="text-xl font-semibold mb-4">Overdue Loans</h2>
-        <OverdueLoansList loans={overdueLoans} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">Recent Payments</h2>
+          <RecentPayments payments={payments.slice(0, 5)} />
+        </div>
+        
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-4">
+            Overdue Loans ({overdueLoans.length})
+          </h2>
+          <OverdueLoansList loans={overdueLoans} />
+        </div>
       </div>
     </div>
   );
-};
-
-export default Dashboard;
+}
