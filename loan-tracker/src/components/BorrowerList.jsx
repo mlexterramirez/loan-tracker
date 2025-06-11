@@ -1,7 +1,6 @@
 // src/components/BorrowerList.jsx
-import { UserIcon,  MailIcon as EnvelopeIcon, PhoneIcon, HomeIcon, PencilIcon, TrashIcon } from '@heroicons/react/outline';
+import { UserIcon, MailIcon, PhoneIcon, HomeIcon, PencilIcon, TrashIcon } from '@heroicons/react/outline';
 import { formatPhoneNumber } from '../utils/helpers';
-
 
 export default function BorrowerList({ borrowers, onEdit, onDelete }) {
   return (
@@ -12,6 +11,7 @@ export default function BorrowerList({ borrowers, onEdit, onDelete }) {
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Loans</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
           </tr>
         </thead>
@@ -25,7 +25,7 @@ export default function BorrowerList({ borrowers, onEdit, onDelete }) {
                     <div className="font-medium text-gray-900">{borrower.fullName}</div>
                     {borrower.email && (
                       <div className="flex items-center text-sm text-gray-500">
-                        <EnvelopeIcon className="h-4 w-4 mr-1" />
+                        <MailIcon className="h-4 w-4 mr-1" />
                         {borrower.email}
                       </div>
                     )}
@@ -47,6 +47,11 @@ export default function BorrowerList({ borrowers, onEdit, onDelete }) {
                     {borrower.address}
                   </div>
                 )}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap">
+                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                  {borrower.loanCount || 0}
+                </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
