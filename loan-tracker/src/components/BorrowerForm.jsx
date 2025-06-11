@@ -1,98 +1,170 @@
-import { useForm } from 'react-hook-form';
+import { useState } from 'react';
 
-const BorrowerForm = () =>({ onSubmit }) =>{
-  const { register, handleSubmit, formState: { errors } } = useForm();
+export default function BorrowerForm({ onSubmit, onCancel, initialData }) {
+  const [formData, setFormData] = useState(initialData || {
+    fullName: '',
+    homeAddress: '',
+    workAddress: '',
+    primaryContact: '',
+    contactEmail: '',
+    referenceContact1: {
+      name: '',
+      contact: ''
+    },
+    referenceContact2: {
+      name: '',
+      contact: ''
+    }
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    
+    // Handle nested fields
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent],
+          [child]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <label className="block mb-1">Full Name</label>
-        <input
-          {...register('fullName', { required: true })}
-          className="w-full p-2 border rounded"
-        />
-        {errors.fullName && <span className="text-red-500">Required</span>}
-      </div>
-
+    <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1">Home Address</label>
+        <div className="col-span-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Full Name*</label>
           <input
-            {...register('homeAddress', { required: true })}
-            className="w-full p-2 border rounded"
-          />
-          {errors.homeAddress && <span className="text-red-500">Required</span>}
-        </div>
-        <div>
-          <label className="block mb-1">Work Address (Optional)</label>
-          <input
-            {...register('workAddress')}
-            className="w-full p-2 border rounded"
+            type="text"
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            required
           />
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1">Primary Contact</label>
+        <div className="col-span-2 md:col-span-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Home Address*</label>
           <input
-            {...register('primaryContact', { required: true })}
-            className="w-full p-2 border rounded"
+            type="text"
+            name="homeAddress"
+            value={formData.homeAddress}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            required
           />
-          {errors.primaryContact && <span className="text-red-500">Required</span>}
         </div>
-        <div>
-          <label className="block mb-1">Email</label>
+
+        <div className="col-span-2 md:col-span-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Work Address (Optional)</label>
+          <input
+            type="text"
+            name="workAddress"
+            value={formData.workAddress}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+          />
+        </div>
+
+        <div className="col-span-2 md:col-span-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Primary Contact*</label>
+          <input
+            type="text"
+            name="primaryContact"
+            value={formData.primaryContact}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            required
+          />
+        </div>
+
+        <div className="col-span-2 md:col-span-1">
+          <label className="block text-sm font-medium text-gray-700 mb-1">Email*</label>
           <input
             type="email"
-            {...register('contactEmail', { required: true })}
-            className="w-full p-2 border rounded"
+            name="contactEmail"
+            value={formData.contactEmail}
+            onChange={handleChange}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            required
           />
-          {errors.contactEmail && <span className="text-red-500">Required</span>}
+        </div>
+
+        <div className="col-span-2">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Reference 1*</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                name="referenceContact1.name"
+                value={formData.referenceContact1.name}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+              <input
+                type="text"
+                name="referenceContact1.contact"
+                value={formData.referenceContact1.contact}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="col-span-2">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Reference 2 (Optional)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+              <input
+                type="text"
+                name="referenceContact2.name"
+                value={formData.referenceContact2.name}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Contact</label>
+              <input
+                type="text"
+                name="referenceContact2.contact"
+                value={formData.referenceContact2.contact}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1">Reference 1 Name</label>
-          <input
-            {...register('referenceContact1.name', { required: true })}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div>
-          <label className="block mb-1">Reference 1 Contact</label>
-          <input
-            {...register('referenceContact1.contact', { required: true })}
-            className="w-full p-2 border rounded"
-          />
-        </div>
+      <div className="flex justify-end space-x-3 mt-6">
+        <button type="button" onClick={onCancel} className="px-4 py-2 border border-gray-300 rounded-lg">
+          Cancel
+        </button>
+        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-lg">
+          {initialData ? 'Update' : 'Add'} Borrower
+        </button>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block mb-1">Reference 2 Name (Optional)</label>
-          <input
-            {...register('referenceContact2.name')}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div>
-          <label className="block mb-1">Reference 2 Contact (Optional)</label>
-          <input
-            {...register('referenceContact2.contact')}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-      >
-        Save Borrower
-      </button>
     </form>
   );
-};
-export default BorrowerForm;
+}

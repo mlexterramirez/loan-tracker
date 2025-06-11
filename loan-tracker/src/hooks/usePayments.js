@@ -1,38 +1,61 @@
-import { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc } from 'firebase/firestore';
+// src/hooks/usePayments.js
+import { useState, useEffect, useCallback } from 'react';
+import { 
+  collection, 
+  query, 
+  where, 
+  onSnapshot,
+  addDoc
+} from 'firebase/firestore';
 import { db } from '../firebase/config';
 
-export const usePayments = (loanId = null) => {
+export const usePayments = (userId) => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    let q;
-    if (loanId) {
-      q = query(collection(db, 'payments'), where('loanId', '==', loanId));
-    } else {
-      q = query(collection(db, 'payments'));
+    if (!userId) return;
+    
+    setLoading(true);
+    const q = query(collection(db, 'payments'), where('userId', '==', userId));
+    
+    const unsubscribe = onSnapshot(q, 
+      (snapshot) => {
+        const paymentsData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+        setPayments(paymentsData);
+        setLoading(false);
+      },
+      (err) => {
+        setError(err);
+        setLoading(false);
+      }
+    );
+
+    return unsubscribe;
+  }, [userId]);
+
+  const addPayment = useCallback(async (paymentData) => {
+    try {
+      const paymentRef = await addDoc(collection(db, 'payments'), {
+        ...paymentData,
+        paymentDate: new Date().toISOString(),
+        userId
+      });
+      return { id: paymentRef.id, ...paymentData };
+    } catch (err) {
+      setError(err);
+      throw err;
     }
+  }, [userId]);
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const paymentsData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setPayments(paymentsData);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [loanId]);
-
-  const addPayment = async (paymentData) => {
-    const paymentRef = await addDoc(collection(db, 'payments'), {
-      ...paymentData,
-      paymentDate: new Date().toISOString()
-    });
-    return { id: paymentRef.id, ...paymentData };
+  return { 
+    payments, 
+    loading, 
+    error, 
+    addPayment 
   };
-
-  return { payments, loading, addPayment };
 };
