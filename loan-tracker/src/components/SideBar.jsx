@@ -1,24 +1,36 @@
-import { NavLink } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+// src/components/Sidebar.jsx
+import { useAuth } from '../hooks/useAuth';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   ChartBarIcon,
-  UserGroupIcon,
+  UsersIcon,
   CurrencyDollarIcon,
-  CreditCardIcon
-} from '@heroicons/react/outline'
+  CreditCardIcon,
+  LogoutIcon
+} from '@heroicons/react/outline';
 
 export default function Sidebar() {
-  const { user } = useAuth()
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: ChartBarIcon },
-    { name: 'Borrowers', path: '/borrowers', icon: UserGroupIcon },
+    { name: 'Borrowers', path: '/borrowers', icon: UsersIcon },
     { name: 'Loans', path: '/loans', icon: CurrencyDollarIcon },
     { name: 'Payments', path: '/payments', icon: CreditCardIcon },
-  ]
+  ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
-    <div className="hidden md:flex md:w-64 bg-white shadow-lg flex-col">
+    <div className="hidden md:flex md:w-64 bg-white shadow-lg flex-col border-r">
       <div className="p-4 text-center bg-primary-500">
         <h1 className="text-2xl font-bold text-white">LoanMate</h1>
       </div>
@@ -27,6 +39,7 @@ export default function Sidebar() {
           <NavLink
             key={item.name}
             to={item.path}
+            end
             className={({ isActive }) =>
               `flex items-center p-3 rounded-lg transition-colors ${
                 isActive
@@ -40,19 +53,26 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      {user && (
-        <div className="p-4 border-t">
+      <div className="p-4 border-t">
+        <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold">
-              {user.email.charAt(0).toUpperCase()}
+              {currentUser.email.charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="font-medium">{user.email}</p>
+              <p className="font-medium truncate max-w-[120px]">{currentUser.email}</p>
               <p className="text-sm text-gray-500">Admin</p>
             </div>
           </div>
+          <button 
+            onClick={handleLogout}
+            className="p-2 text-gray-500 hover:text-red-500"
+            title="Logout"
+          >
+            <LogoutIcon className="h-5 w-5" />
+          </button>
         </div>
-      )}
+      </div>
     </div>
-  )
+  );
 }

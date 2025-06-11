@@ -1,32 +1,24 @@
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-} from 'firebase/auth';
+import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
-import { getFirestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAoggFzq5yhT2hPXelCrhwMAQ6QHajv-KY",
-  authDomain: "loanmanagement-fe109.firebaseapp.com",
-  projectId: "loanmanagement-fe109",
-  storageBucket: "loanmanagement-fe109.appspot.com",
-  messagingSenderId: "707075278222",
-  appId: "1:707075278222:web:e453bd5302ef0ca18110df"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+let firebaseApp;
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
+} else {
+  firebaseApp = getApps()[0];
+}
 
-// Export auth methods
-export {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged
-};
+const db = getFirestore(firebaseApp);
+const auth = getAuth(firebaseApp);
+
+export { db, auth };

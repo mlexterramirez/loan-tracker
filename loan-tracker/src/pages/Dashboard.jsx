@@ -1,58 +1,70 @@
-import { NavLink } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import {
-  ChartBarIcon,
-  UserGroupIcon,
-  CurrencyDollarIcon,
-  CreditCardIcon
-} from '@heroicons/react/outline'
+import { useEffect, useState } from 'react';
+import { collection, query, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import LoanSummaryCard from '../components/LoanSummaryCard';
+import OverdueLoansList from '../components/OverdueLoansList';
 
-export default function Sidebar() {
-  const { user } = useAuth()
+const Dashboard = () => {
+  const [stats, setStats] = useState({
+    totalLoans: 0,
+    activeLoans: 0,
+    overdueLoans: 0,
+    totalAmount: 0
+  });
+  const [overdueLoans, setOverdueLoans] = useState([]);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/', icon: ChartBarIcon },
-    { name: 'Borrowers', path: '/borrowers', icon: UserGroupIcon },
-    { name: 'Loans', path: '/loans', icon: CurrencyDollarIcon },
-    { name: 'Payments', path: '/payments', icon: CreditCardIcon },
-  ]
+  useEffect(() => {
+    const loansQuery = query(collection(db, 'loans'));
+    
+    const unsubscribe = onSnapshot(loansQuery, (snapshot) => {
+      let totalAmount = 0;
+      let activeCount = 0;
+      let overdueCount = 0;
+      const overdue = [];
+      
+      snapshot.forEach(doc => {
+        const loan = doc.data();
+        totalAmount += loan.totalPrice;
+        
+        if (loan.status === 'active') activeCount++;
+        if (loan.status === 'late' || loan.status === 'defaulted') {
+          overdueCount++;
+          overdue.push({ id: doc.id, ...loan });
+        }
+      });
+      
+      setStats({
+        totalLoans: snapshot.size,
+        activeLoans: activeCount,
+        overdueLoans: overdueCount,
+        totalAmount
+      });
+      setOverdueLoans(overdue);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
-    <div className="hidden md:flex md:w-64 bg-white shadow-lg flex-col">
-      <div className="p-4 text-center bg-primary-500">
-        <h1 className="text-2xl font-bold text-white">LoanMate</h1>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-6">Loan Dashboard</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <LoanSummaryCard title="Total Loans" value={stats.totalLoans} />
+        <LoanSummaryCard title="Active Loans" value={stats.activeLoans} />
+        <LoanSummaryCard title="Overdue Loans" value={stats.overdueLoans} />
+        <LoanSummaryCard 
+          title="Total Amount" 
+          value={`₱${stats.totalAmount.toLocaleString()}`} 
+        />
       </div>
-      <nav className="flex-1 p-4 space-y-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.name}
-            to={item.path}
-            className={({ isActive }) =>
-              `flex items-center p-3 rounded-lg transition-colors ${
-                isActive
-                  ? 'bg-primary-100 text-primary-600 font-medium'
-                  : 'hover:bg-gray-100 text-gray-700'
-              }`
-            }
-          >
-            <item.icon className="h-6 w-6 mr-3" />
-            {item.name}
-          </NavLink>
-        ))}
-      </nav>
-      {user && (
-        <div className="p-4 border-t">
-          <div className="flex items-center space-x-3">
-            <div className="h-10 w-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold">
-              {user.email.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <p className="font-medium">{user.email}</p>
-              <p className="text-sm text-gray-500">Admin</p>
-            </div>
-          </div>
-        </div>
-      )}
+      
+      <div className="bg-white p-4 rounded-lg shadow">
+        <h2 className="text-xl font-semibold mb-4">Overdue Loans</h2>
+        <OverdueLoansList loans={overdueLoans} />
+      </div>
     </div>
-  )
-}
+  );
+};
+
+export default Dashboard;
